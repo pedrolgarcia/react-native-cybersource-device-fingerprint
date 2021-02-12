@@ -16,6 +16,7 @@ import com.threatmetrix.TrustDefender.TMXStatusCode;
 import com.threatmetrix.TrustDefender.TMXProfilingOptions;
 import com.threatmetrix.TrustDefender.TMXEndNotifier;
 import com.threatmetrix.TrustDefender.TMXProfilingHandle.Result;
+import com.threatmetrix.TrustDefender.TMXProfilingHandle;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +39,14 @@ public class RNCybersourceDeviceFingerprintModule extends ReactContextBaseJavaMo
     }
 
     @ReactMethod
-    public void configure(final String orgId, /*final String serverURL, */final Promise promise) {
+    public void configure(final String orgId, final String serverURL, final Promise promise) {
         if (_defender != null) {
             promise.reject(CYBERSOURCE_SDK, "CyberSource SDK is already initialised");
+            return;
+        }
+
+        if(serverURL == null) {
+            promise.reject(CYBERSOURCE_SDK, "Invalid parameters. Check serverUrl");
             return;
         }
 
@@ -49,7 +55,7 @@ public class RNCybersourceDeviceFingerprintModule extends ReactContextBaseJavaMo
         try {
             TMXConfig config = new TMXConfig()
                     .setOrgId(orgId)
-                    //.setFPServer(serverURL)
+                    .setFPServer(serverURL)
                     .setContext(_application);
             _defender.init(config);
         } catch (IllegalArgumentException exception) {
@@ -60,7 +66,7 @@ public class RNCybersourceDeviceFingerprintModule extends ReactContextBaseJavaMo
     }
 
     @ReactMethod
-    public void getSessionID(final ReadableArray attributes, final Promise promise) {
+    public void getSessionID(final ReadableArray attributes, final String merchantId, final String merchantOrderId, final Promise promise) {
         if (_defender == null) {
             promise.reject(CYBERSOURCE_SDK, "CyberSource SDK is not yet initialised");
             return;
@@ -76,8 +82,17 @@ public class RNCybersourceDeviceFingerprintModule extends ReactContextBaseJavaMo
             }
         }
 
-        TMXProfilingOptions options = new TMXProfilingOptions().setCustomAttributes(list);
-        TMXProfiling.getInstance().profile(options, new CompletionNotifier(promise));
+        if(merchantId == null || merchantOrderId == null) {
+            promise.reject(CYBERSOURCE_SDK, "Invalid parameters. Check merchantId and merchantOrderId");
+            return;
+        }
+
+        String fingerPrint = merchantId + merchantOrderId;
+
+        TMXProfilingOptions options = new TMXProfilingOptions().setCustomAttributes(null);
+        options.setSessionID(fingerPrint);
+
+        TMXProfilingHandle profilingHandle = TMXProfiling.getInstance().profile(options, new CompletionNotifier(promise));
     }
 
     private class CompletionNotifier implements TMXEndNotifier {
