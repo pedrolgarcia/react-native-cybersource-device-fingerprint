@@ -24,7 +24,7 @@ RCT_EXPORT_MODULE()
 
 RCT_EXPORT_METHOD(
                   configure:(NSString *)orgId
-                  // serverURL:(NSString *)serverURL
+                  serverURL:(NSString *)serverURL
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject
                   ) {
@@ -38,7 +38,7 @@ RCT_EXPORT_METHOD(
     @try {
         [_defender configure:@{
                                TMXOrgID: orgId,
-                               // TMXFingerprintServer: serverURL,
+                               TMXFingerprintServer: serverURL,
                                }];
     } @catch (NSException *exception) {
         reject(kRejectCode, @"Invalid parameters", nil);
@@ -50,11 +50,14 @@ RCT_EXPORT_METHOD(
 
 RCT_EXPORT_METHOD(
                   getSessionID:(NSArray *)attributes
+                  merchantId:(NSString *)merchantId
+                  merchantOrderId:(NSString *)merchantOrderId
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject
                   ) {
     [_defender profileDeviceUsing:@{
        TMXCustomAttributes: attributes,
+       TMXSessionID: [NSString stringWithFormat:@"%@%@", merchantId, merchantOrderId],
     } callbackBlock:^(NSDictionary * result) {
         TMXStatusCode statusCode = [[result valueForKey:TMXProfileStatus] integerValue];
         resolve(@{
